@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
 import { v4 as uuid } from "uuid";
+const sudokuTools = require("sudokutoolcollection");
 
 const app = express();
 
@@ -26,6 +27,7 @@ function getCurrentGames(socket: Socket) {
 //or just functions
 class MultiplayerSudoku {
     data: string[];
+    layout: string[];
     state: "create" | "init" | "run" | "done";
     id: string;
 
@@ -42,6 +44,8 @@ class MultiplayerSudoku {
     start() {
         this.state = "run";
         this.data = initData();
+        this.layout = sudokuTools().generator.generate("medium").replace(/\./g, " ").split("");
+        io.to(this.id).emit("game layout", this.layout)
         io.to(this.id).emit("game start", this.data)
     }
 }
@@ -81,9 +85,10 @@ function joinGame(socket: Socket, gameId: string) {
     if (state === "create")
         initGame(gameId)
     else {
-        const data = games.get(gameId).data;
+        const game = games.get(gameId);
         socket.emit("game init");
-        socket.emit("game update", data);
+        socket.emit("game layout", game.layout);
+        socket.emit("game update", game.data);
     }
 
     return true;
@@ -115,14 +120,14 @@ io.on("connection", socket => {
             return;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        //await new Promise(resolve => setTimeout(resolve, 1000));
         games.get(gameId).data = data;
         io.in(gameId).emit("game update", data);
     });
 });
 
 
-const PORT = 4000;
+const PORT = 5001;
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
