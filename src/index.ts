@@ -1,8 +1,8 @@
 import express from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
-import { v4 as uuid } from "uuid";
 const sudokuTools = require("sudokutoolcollection");
+import { nanoid } from "nanoid";
 
 const app = express();
 
@@ -76,7 +76,7 @@ class MultiplayerSudoku {
 }
 
 function createGame() {
-    const gameId = uuid();
+    const gameId = nanoid();
     games.set(gameId, new MultiplayerSudoku(gameId));
     return gameId;
 }
