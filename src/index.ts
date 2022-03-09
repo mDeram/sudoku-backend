@@ -31,7 +31,6 @@ class MultiplayerSudoku {
     layout: string[];
     state: "create" | "init" | "run" | "done";
     id: string;
-    solution: string[] | null;
 
     constructor(id: string) {
         this.id = id;
@@ -63,16 +62,16 @@ class MultiplayerSudoku {
     }
 
     checkSolved() {
-        if (!this.solution) {
-            const formatedData = this.layout.join("").replace(/\ /g, ".");
-            const solution = sudokuTools().solver.solve(formatedData);
-            this.solution = solution.replace(/\./g, " ").split("");
-        }
+        const layoutAndData = [...this.layout];
         for (let i = 0; i < 81; i++) {
-            if (this.solution![i] !== this.data[i])
-                return false;
+            if (layoutAndData[i] === " ") {
+                if (this.data[i] === " ") return false;
+                layoutAndData[i] = this.data[i];
+            }
         }
-        return true;
+        const formatedData = layoutAndData.join("").replace(/\ /g, ".");
+        console.log(formatedData);
+        return sudokuTools().solver.solve(formatedData);
     }
 }
 
