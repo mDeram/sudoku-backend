@@ -31,6 +31,7 @@ class MultiplayerSudoku {
     layout: string[];
     state: "create" | "init" | "run" | "done";
     id: string;
+    solution: string[] | null;
 
     constructor(id: string) {
         this.id = id;
@@ -48,6 +49,30 @@ class MultiplayerSudoku {
         this.layout = sudokuTools().generator.generate("hard").replace(/\./g, " ").split("");
         io.to(this.id).emit("game layout", this.layout)
         io.to(this.id).emit("game start", this.data)
+    }
+
+    update(data: string[]) {
+        //TODO check data validity
+        this.data = data;
+        io.in(this.id).emit("game update", data);
+
+        if (this.checkSolved()) {
+            this.state = "done"
+            io.in(this.id).emit("game success");
+        }
+    }
+
+    checkSolved() {
+        if (!this.solution) {
+            const formatedData = this.layout.join("").replace(/\ /g, ".");
+            const solution = sudokuTools().solver.solve(formatedData);
+            this.solution = solution.replace(/\./g, " ").split("");
+        }
+        for (let i = 0; i < 81; i++) {
+            if (this.solution![i] !== this.data[i])
+                return false;
+        }
+        return true;
     }
 }
 
@@ -122,8 +147,12 @@ io.on("connection", socket => {
         }
 
         //await new Promise(resolve => setTimeout(resolve, 1000));
-        games.get(gameId).data = data;
-        io.in(gameId).emit("game update", data);
+        const game = games.get(gameId)
+        if (!game) {
+            socket.emit("error", "game not found");
+            return;
+        }
+        game.update(data);
     });
 });
 
