@@ -1,14 +1,14 @@
 import express from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
-const sudokuTools = require("sudokutoolcollection");
 import { nanoid } from "nanoid";
+import MultiplayerSudoku from "./games/MultiplayerSudoku";
 
 const app = express();
 
 const server = http.createServer(app);
 const path = process.env.NODE_ENV === "production" ? "/sudoku/socket" : "/socket.io";
-const io = new Server(server, { transports: ["websocket"], path: path });
+export const io = new Server(server, { transports: ["websocket"], path: path });
 const games = new Map();
 
 function leaveAllGames(socket: Socket) {
@@ -24,69 +24,10 @@ function getCurrentGames(socket: Socket) {
     return result;
 }
 
-//use a proxy with function to handle game updates
-//or just functions
-class MultiplayerSudoku {
-    data: string[];
-    layout: string[];
-    state: "create" | "init" | "run" | "done";
-    id: string;
-
-    constructor(id: string) {
-        this.id = id;
-        this.state = "create";
-    }
-
-    init() {
-        this.state = "init";
-        io.to(this.id).emit("game init")
-    }
-
-    start() {
-        this.state = "run";
-        this.data = initData();
-        this.layout = sudokuTools().generator.generate("hard").replace(/\./g, " ").split("");
-        io.to(this.id).emit("game layout", this.layout)
-        io.to(this.id).emit("game start", this.data)
-    }
-
-    update(data: string[]) {
-        //TODO check data validity
-        this.data = data;
-        io.in(this.id).emit("game update", data);
-
-        if (this.checkSolved()) {
-            this.state = "done"
-            io.in(this.id).emit("game success");
-        }
-    }
-
-    checkSolved() {
-        const layoutAndData = [...this.layout];
-        for (let i = 0; i < 81; i++) {
-            if (layoutAndData[i] === " ") {
-                if (this.data[i] === " ") return false;
-                layoutAndData[i] = this.data[i];
-            }
-        }
-        const formatedData = layoutAndData.join("").replace(/\ /g, ".");
-        console.log(formatedData);
-        return sudokuTools().solver.solve(formatedData);
-    }
-}
-
 function createGame() {
     const gameId = nanoid();
     games.set(gameId, new MultiplayerSudoku(gameId));
     return gameId;
-}
-
-function initData() {
-    const newData: string[] = [];
-    for (let i = 0; i < 81; i++) {
-        newData[i] = " ";
-    }
-    return newData;
 }
 
 async function initGame(gameId: string) {
@@ -101,6 +42,7 @@ async function initGame(gameId: string) {
     }
 }
 
+//TODO refactor
 function joinGame(socket: Socket, gameId: string) {
     if (!games.has(gameId)) return false;
 
