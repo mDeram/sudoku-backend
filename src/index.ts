@@ -7,7 +7,8 @@ const sudokuTools = require("sudokutoolcollection");
 const app = express();
 
 const server = http.createServer(app);
-const io = new Server(server, { transports: ["websocket"] });
+const path = process.env.NODE_ENV === "production" ? "/sudoku/socket" : "/socket.io";
+const io = new Server(server, { transports: ["websocket"], path: path });
 const games = new Map();
 
 function leaveAllGames(socket: Socket) {
@@ -44,7 +45,7 @@ class MultiplayerSudoku {
     start() {
         this.state = "run";
         this.data = initData();
-        this.layout = sudokuTools().generator.generate("medium").replace(/\./g, " ").split("");
+        this.layout = sudokuTools().generator.generate("hard").replace(/\./g, " ").split("");
         io.to(this.id).emit("game layout", this.layout)
         io.to(this.id).emit("game start", this.data)
     }
