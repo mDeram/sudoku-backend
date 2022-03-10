@@ -33,32 +33,13 @@ class GameManager {
         return gameId;
     }
 
-    async initGame(gameId: string) {
-        const game = this.games.get(gameId);
-        if (game?.state !== "create") return;
-
-        const playersInGame = await io.in(gameId).fetchSockets();
-        if (playersInGame.length >= 2) {
-            game.init();
-            setTimeout(() => {
-                game.start();
-            }, 2000);
-        }
-    }
-
     joinGame(gameId: string, socket: Socket) {
         const game = this.games.get(gameId);
         if (!game) return false;
 
         this.leaveAllGames(socket);
         socket.join(gameId);
-        if (game.state === "create")
-            this.initGame(gameId)
-        else {
-            socket.emit("game init");
-            socket.emit("game layout", game.layout);
-            socket.emit("game update", game.data);
-        }
+        game.join(socket);
 
         return true;
     }

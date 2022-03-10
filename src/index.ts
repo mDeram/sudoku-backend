@@ -1,6 +1,6 @@
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import GameManager from "./GameManager";
 const gameManager = new GameManager();
 
@@ -10,6 +10,22 @@ const server = http.createServer(app);
 const path = process.env.NODE_ENV === "production" ? "/sudoku/socket" : "/socket.io";
 export const io = new Server(server, { transports: ["websocket"], path: path });
 
+type GameFunction = (socket: Socket, message: any) => void;
+const gameFunction: {
+    create: GameFunction
+    join: GameFunction
+} = {
+    create: (socket: Socket) => {
+        const gameId = gameManager.createGame();
+        gameManager.joinGame(gameId, socket);
+        socket.emit("gameId", gameId);
+    },
+    join: (socket: Socket, message: any) => {
+        if (!gameManager.joinGame(message.id, socket))
+            socket.emit("error", "game not found");
+    }
+}
+
 io.on("connection", socket => {
     console.log("connection from: ", socket.id);
 
@@ -17,25 +33,18 @@ io.on("connection", socket => {
         console.log("disconnection from: ", socket.id);
     });
 
-    socket.on("game create", () => {
-        const gameId = gameManager.createGame();
-        gameManager.joinGame(gameId, socket);
-        socket.emit("game id", gameId);
+    socket.on("gameFunction", message => {
+        if (message.name in gameFunction)
+            gameFunction[message.name as keyof typeof gameFunction](socket, message);
     });
 
-    socket.on("game join", gameId => {
-        if (!gameManager.joinGame(gameId, socket))
-            socket.emit("error", "game not found");
-    });
-
-    socket.on("game update", async (data) => {
+    socket.on("gameUpdate", async (data) => {
         const [gameId] = gameManager.getCurrentGames(socket);
         if (!gameId || !gameManager.exist(gameId)) {
             socket.emit("error", "game not found");
             return;
         }
 
-        //await new Promise(resolve => setTimeout(resolve, 1000));
         gameManager.update(gameId, data);
     });
 });

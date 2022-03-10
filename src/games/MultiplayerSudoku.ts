@@ -1,3 +1,4 @@
+import { Socket } from "socket.io";
 import { io } from "../index";
 const sudokuTools = require("sudokutoolcollection");
 
@@ -30,35 +31,61 @@ class MultiplayerSudoku {
 
     constructor(id: string) {
         this.id = id;
-        this.state = "create";
         this.data = initData();
         this.layout = generateSudoku("easy");
+        this.setState("create");
     }
 
     init() {
-        this.state = "init";
-        io.to(this.id).emit("game init")
+        this.setState("init");
+        setTimeout(() => {
+            this.start();
+        }, 1000);
     }
 
     start() {
-        this.state = "run";
-        io.to(this.id).emit("game layout", this.layout)
-        io.to(this.id).emit("game start", this.data)
+        this.setState("run");
+        io.to(this.id).emit("gameUpdate", { layout: this.layout, data: this.data });
     }
 
     update(data: string[]) {
         const isDataValid = this.setData(data);
         if (!isDataValid) return;
 
-        io.in(this.id).emit("game update", data);
+        io.in(this.id).emit("gameUpdate", { data });
 
         if (this.isSolved())
             this.end();
     }
 
     end() {
-        this.state = "done";
-        io.in(this.id).emit("game success");
+        this.setState("done");
+    }
+
+    async join(socket: Socket) {
+        if (await this.canInit())
+            this.init();
+        else
+            this.catchUp(socket);
+    }
+
+    async canInit() {
+        if (this.state !== "create") return false;
+        const playersInGame = await io.in(this.id).fetchSockets();
+        const enoughPlayerInGame = playersInGame.length >= 2;
+        return enoughPlayerInGame;
+    }
+
+    catchUp(socket: Socket) {
+        if (this.state === "create") return;
+        socket.emit("gameState", "init");
+        if (this.state !== "init")
+            socket.emit("gameUpdate", { layout: this.layout, data: this.data });
+    }
+
+    setState(state: MultiplayerSudoku["state"]) {
+        this.state = state;
+        io.to(this.id).emit("gameState", state);
     }
 
     setData(data: string[]): boolean {
