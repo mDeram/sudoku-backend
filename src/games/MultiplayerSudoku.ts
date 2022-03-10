@@ -47,18 +47,24 @@ class MultiplayerSudoku {
     }
 
     update(data: string[]) {
-        //TODO check data validity
-        this.data = data;
+        const isDataValid = this.setData(data);
+        if (!isDataValid) return;
+
         io.in(this.id).emit("game update", data);
 
-        if (this.isSolved()) {
+        if (this.isSolved())
             this.end();
-        }
     }
 
     end() {
         this.state = "done";
         io.in(this.id).emit("game success");
+    }
+
+    setData(data: string[]): boolean {
+        //TODO check data validity
+        this.data = data;
+        return true;
     }
 
     isSolved() {
