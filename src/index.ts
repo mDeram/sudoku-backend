@@ -23,6 +23,7 @@ const gameFunction: {
     join: (socket: Socket, message: any) => {
         if (!gameManager.joinGame(message.id, socket))
             socket.emit("error", "game not found");
+        socket.emit("gameId", message.id);
     }
 }
 
@@ -38,14 +39,14 @@ io.on("connection", socket => {
             gameFunction[message.name as keyof typeof gameFunction](socket, message);
     });
 
-    socket.on("gameUpdate", async (data) => {
+    socket.on("gameUpdate", data => {
         const [gameId] = gameManager.getCurrentGames(socket);
         if (!gameId || !gameManager.exist(gameId)) {
             socket.emit("error", "game not found");
             return;
         }
 
-        gameManager.update(gameId, data);
+        gameManager.update(gameId, data, socket);
     });
 });
 

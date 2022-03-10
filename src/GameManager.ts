@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
 import { Socket } from "socket.io";
-import { io } from "./index";
 import MultiplayerSudoku from "./games/MultiplayerSudoku";
 
 class GameManager {
@@ -44,8 +43,8 @@ class GameManager {
         return true;
     }
 
-    update(gameId: string, data: any) {
-        this.games.get(gameId)?.update(data);
+    update(gameId: string, data: string[], socket: Socket) {
+        this.games.get(gameId)?.update(data, socket);
     }
 }
 

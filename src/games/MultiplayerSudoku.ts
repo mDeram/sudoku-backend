@@ -2,6 +2,8 @@ import { Socket } from "socket.io";
 import { io } from "../index";
 const sudokuTools = require("sudokutoolcollection");
 
+const possibleCell = ["1", "2", "3", "4", "5", "6", "7", "8", "9", " "];
+
 function initData() {
     const newData: string[] = [];
     for (let i = 0; i < 81; i++) {
@@ -48,10 +50,13 @@ class MultiplayerSudoku {
         io.to(this.id).emit("gameUpdate", { layout: this.layout, data: this.data });
     }
 
-    update(data: string[]) {
-        //TODO send valid data to the user that sent wrong data
+    update(data: string[], socket: Socket) {
+        //TODO when the user send incorrect data multiple times, he get kicked
         const isDataValid = this.setData(data);
-        if (!isDataValid) return;
+        if (!isDataValid) {
+            socket.emit("gameUpdate", { layout: this.layout, data: this.data });
+            return;
+        }
 
         io.in(this.id).emit("gameUpdate", { data });
 
@@ -80,8 +85,10 @@ class MultiplayerSudoku {
     catchUp(socket: Socket) {
         if (this.state === "create") return;
         socket.emit("gameState", "init");
-        if (this.state !== "init")
+        if (this.state !== "init") {
+            socket.emit("gameState", this.state);
             socket.emit("gameUpdate", { layout: this.layout, data: this.data });
+        }
     }
 
     setState(state: MultiplayerSudoku["state"]) {
@@ -90,8 +97,21 @@ class MultiplayerSudoku {
     }
 
     setData(data: string[]): boolean {
-        //TODO check data validity
+        if (!this.checkDataValidity(data)) return false
+
         this.data = data;
+        return true;
+    }
+
+    checkDataValidity(data: string[]) {
+        if (!Array.isArray(data)) return false;
+        if (data.length !== 81) return false;
+
+        for (let i = 0; i < 81; i++) {
+            const cell = data[i];
+            if (!possibleCell.includes(cell)) return false;
+            if (this.layout[i] !== " " && cell !== " ") return false;
+        }
         return true;
     }
 
