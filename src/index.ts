@@ -3,12 +3,12 @@ import http from "http";
 import { Server, Socket } from "socket.io";
 import GameManager from "./GameManager";
 const gameManager = new GameManager();
+import { PATH } from "./constants";
 
 const app = express();
 
 const server = http.createServer(app);
-const path = process.env.NODE_ENV === "production" ? "/sudoku/socket" : "/socket.io";
-export const io = new Server(server, { transports: ["websocket"], path: path });
+export const io = new Server(server, { transports: ["websocket"], path: PATH });
 
 type GameFunction = (socket: Socket, message: any) => void;
 const gameFunction: {

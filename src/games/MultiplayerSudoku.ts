@@ -49,6 +49,7 @@ class MultiplayerSudoku {
     }
 
     update(data: string[]) {
+        //TODO send valid data to the user that sent wrong data
         const isDataValid = this.setData(data);
         if (!isDataValid) return;
 
