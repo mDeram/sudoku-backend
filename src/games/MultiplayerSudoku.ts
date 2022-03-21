@@ -52,6 +52,9 @@ class MultiplayerSudoku {
 
     update(data: string[], socket: Socket) {
         //TODO when the user send incorrect data multiple times, he get kicked
+        if (this.state !== "run")
+            socket.emit("error", "game is not running");
+
         const isDataValid = this.setData(data);
         if (!isDataValid) {
             socket.emit("gameUpdate", { layout: this.layout, data: this.data });
@@ -83,7 +86,11 @@ class MultiplayerSudoku {
     }
 
     catchUp(socket: Socket) {
-        if (this.state === "create") return;
+        if (this.state === "create") {
+            socket.emit("gameState", "create");
+            return;
+        }
+
         socket.emit("gameState", "init");
         if (this.state !== "init") {
             socket.emit("gameState", this.state);
