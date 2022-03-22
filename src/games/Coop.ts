@@ -46,13 +46,13 @@ class Coop {
         if (restoreData) {
             this.data = restoreData.data;
             this.layout = restoreData.layout;
-            this.setState(restoreData.state);
+            this.state = "create";
             return;
         }
 
         this.data = initData();
         this.layout = generateSudoku("easy");
-        this.setState("create");
+        this.state = "create";
 
         this.persist();
     }
@@ -158,7 +158,6 @@ class Coop {
             }
         }
         const formatedData = formatSudokuToCheck(layoutAndData);
-        console.log(formatedData);
         return sudokuTools().solver.solve(formatedData);
     }
 }
