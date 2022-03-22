@@ -1,31 +1,17 @@
 import express from "express";
 import http from "http";
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 import GameManager from "./GameManager";
-const gameManager = new GameManager();
 import { PATH } from "./constants";
+import gameFunctions from "./utils/gameFunctions";
+import restoreGames from "./redis/restoreGames";
+
+export const gameManager = new GameManager();
 
 const app = express();
 
 const server = http.createServer(app);
 export const io = new Server(server, { transports: ["websocket"], path: PATH });
-
-type GameFunction = (socket: Socket, message: any) => void;
-const gameFunction: {
-    create: GameFunction
-    join: GameFunction
-} = {
-    create: (socket: Socket) => {
-        const gameId = gameManager.createGame();
-        gameManager.joinGame(gameId, socket);
-        socket.emit("gameId", gameId);
-    },
-    join: (socket: Socket, message: any) => {
-        if (!gameManager.joinGame(message.id, socket))
-            socket.emit("error", "game not found");
-        socket.emit("gameId", message.id);
-    }
-}
 
 io.on("connection", socket => {
     console.log("connection from: ", socket.id);
@@ -35,8 +21,8 @@ io.on("connection", socket => {
     });
 
     socket.on("gameFunction", message => {
-        if (message.name in gameFunction)
-            gameFunction[message.name as keyof typeof gameFunction](socket, message);
+        if (message.name in gameFunctions)
+            gameFunctions[message.name as keyof typeof gameFunctions](socket, message);
     });
 
     socket.on("gameUpdate", data => {
@@ -50,8 +36,13 @@ io.on("connection", socket => {
     });
 });
 
+const main = async () => {
+    await restoreGames();
 
-const PORT = 5001;
-server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-});
+    const PORT = 5001;
+    server.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+    });
+}
+
+main();

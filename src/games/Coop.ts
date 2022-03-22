@@ -1,4 +1,5 @@
 import { Socket } from "socket.io";
+import persistGame from "../redis/persistGame";
 import { io } from "../index";
 const sudokuTools = require("sudokutoolcollection");
 
@@ -25,17 +26,40 @@ function generateSudoku(difficulty: "easy" | "medium" | "hard" | number) {
     return formatGeneratedSudoku(sudoku);
 }
 
-class MultiplayerSudoku {
+export type GameState = "create" | "init" | "run" | "done";
+
+export interface PersistedData {
     data: string[];
     layout: string[];
-    state: "create" | "init" | "run" | "done";
+    state: GameState
+}
+
+class Coop {
+    data: string[];
+    layout: string[];
+    state: GameState;
     id: string;
 
-    constructor(id: string) {
+    constructor(id: string, restoreData?: PersistedData) {
         this.id = id;
+
+        if (restoreData) {
+            this.data = restoreData.data;
+            this.layout = restoreData.layout;
+            this.setState(restoreData.state);
+            return;
+        }
+
         this.data = initData();
         this.layout = generateSudoku("easy");
         this.setState("create");
+
+        this.persist();
+    }
+
+    async persist() {
+        // Do we care about this being async?
+        await persistGame(this.id, { data: this.data, layout: this.layout, state: this.state });
     }
 
     init() {
@@ -98,15 +122,18 @@ class MultiplayerSudoku {
         }
     }
 
-    setState(state: MultiplayerSudoku["state"]) {
+    setState(state: Coop["state"]) {
         this.state = state;
         io.to(this.id).emit("gameState", state);
+        this.persist();
     }
 
     setData(data: string[]): boolean {
         if (!this.checkDataValidity(data)) return false
 
         this.data = data;
+
+        this.persist();
         return true;
     }
 
@@ -136,4 +163,4 @@ class MultiplayerSudoku {
     }
 }
 
-export default MultiplayerSudoku;
+export default Coop;

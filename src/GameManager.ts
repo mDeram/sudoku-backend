@@ -1,9 +1,9 @@
 import { nanoid } from "nanoid";
 import { Socket } from "socket.io";
-import MultiplayerSudoku from "./games/MultiplayerSudoku";
+import Coop, { PersistedData } from "./games/Coop";
 
 class GameManager {
-    games: Map<string, MultiplayerSudoku>;
+    games: Map<string, Coop>;
 
     constructor() {
         this.games = new Map()
@@ -27,9 +27,14 @@ class GameManager {
     }
 
     createGame() {
+        //TODO secure
         const gameId = nanoid();
-        this.games.set(gameId, new MultiplayerSudoku(gameId));
+        this.games.set(gameId, new Coop(gameId));
         return gameId;
+    }
+
+    restoreGame(id: string, data: PersistedData) {
+        this.games.set(id, new Coop(id, data));
     }
 
     joinGame(gameId: string, socket: Socket) {
