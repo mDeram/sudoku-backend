@@ -1,55 +1,73 @@
 import { nanoid } from "nanoid";
 import { Socket } from "socket.io";
+import { io } from "./index";
 import Coop, { PersistedData } from "./games/Coop";
 
+type GameData = { playerCount: number, game: Coop};
+
 class GameManager {
-    games: Map<string, Coop>;
+    gamesData: Map<string, GameData>;
 
     constructor() {
-        this.games = new Map()
+        this.gamesData = new Map()
     }
 
     exist(gameId: string): boolean {
-        return this.games.has(gameId);
+        return this.gamesData.has(gameId);
     }
 
     getCurrentGames(socket: Socket) {
         const result: string[] = [];
         socket.rooms.forEach(room => {
-            if (this.games.has(room))
+            if (this.gamesData.has(room))
                 result.push(room);
         })
         return result;
     }
 
     leaveAllGames(socket: Socket) {
+        this.leaveGame(socket);
         this.getCurrentGames(socket).forEach(room => socket.leave(room));
     }
 
     createGame() {
-        //TODO secure
         const gameId = nanoid();
-        this.games.set(gameId, new Coop(gameId));
+        this.gamesData.set(gameId, { playerCount: 0, game: new Coop(gameId) });
         return gameId;
     }
 
     restoreGame(id: string, data: PersistedData) {
-        this.games.set(id, new Coop(id, data));
+        this.gamesData.set(id, { playerCount: 0, game: new Coop(id, data) });
     }
 
     joinGame(gameId: string, socket: Socket) {
-        const game = this.games.get(gameId);
-        if (!game) return false;
+        const gameData = this.gamesData.get(gameId);
+        if (!gameData) return false;
 
         this.leaveAllGames(socket);
         socket.join(gameId);
-        game.join(socket);
+        gameData.game.join(socket);
+        this.changePlayerCount(gameData, 1);
 
         return true;
     }
 
+    leaveGame(socket: Socket) {
+        this.getCurrentGames(socket).forEach(room => {
+            const gameData = this.gamesData.get(room);
+            if (!gameData) return;
+            this.changePlayerCount(gameData, -1);
+        });
+    }
+
     update(gameId: string, data: string[], socket: Socket) {
-        this.games.get(gameId)?.update(data, socket);
+        this.gamesData.get(gameId)?.game.update(data, socket);
+    }
+
+    changePlayerCount(gameData: GameData, value: number) {
+        gameData.playerCount += value;
+
+        io.in(gameData.game.id).emit("playerCount", gameData.playerCount);
     }
 }
 

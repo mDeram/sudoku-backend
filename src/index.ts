@@ -14,10 +14,8 @@ const server = http.createServer(app);
 export const io = new Server(server, { transports: ["websocket"], path: PATH });
 
 io.on("connection", socket => {
-    console.log("connection from: ", socket.id);
-
-    socket.on("disconnect", () => {
-        console.log("disconnection from: ", socket.id);
+    socket.on("disconnecting", () => {
+        gameManager.leaveGame(socket);
     });
 
     socket.on("gameFunction", message => {
