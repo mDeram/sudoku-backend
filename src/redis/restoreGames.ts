@@ -8,18 +8,29 @@ async function restoreGameFromKey(key: string) {
     const id = key.split(":").pop();
     if (typeof id === "undefined") return;
 
-    const data = await redis.hgetall(key);
+    try {
+        const data = await redis.hgetall(key);
 
-    gameManager.restoreGame(id, {
-        data: JSON.parse(data.data) as string[],
-        layout: JSON.parse(data.layout) as string[],
-        state: data.state as GameState
-    });
+        const game = {
+            data: JSON.parse(data.data) as string[],
+            layout: JSON.parse(data.layout) as string[],
+            solution: JSON.parse(data.solution) as string[],
+            state: data.state as GameState
+        }
+
+        gameManager.restoreGame(id, game);
+    } catch(e) {
+        console.error(e);
+    }
 }
 
 const restoreGames = async () => {
     const query = getCoopGamesPrefix() + "*";
-    await scanAndExecuteByChunk(query, restoreGameFromKey);
+    try {
+        await scanAndExecuteByChunk(query, restoreGameFromKey);
+    } catch(e) {
+        console.error("Could not restore all games", e);
+    }
 }
 
 export default restoreGames;

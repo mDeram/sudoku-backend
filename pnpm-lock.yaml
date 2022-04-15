@@ -7,7 +7,7 @@ specifiers:
   ioredis: ^4.28.5
   nanoid: ^3.3.1
   socket.io: ^4.4.1
-  sudokutoolcollection: ^1.1.3
+  sudoku-gen: ^1.0.0
   typescript: ^4.6.2
 
 dependencies:
@@ -15,7 +15,7 @@ dependencies:
   ioredis: 4.28.5
   nanoid: 3.3.1
   socket.io: 4.4.1
-  sudokutoolcollection: 1.1.3
+  sudoku-gen: 1.0.0
 
 devDependencies:
   '@types/express': 4.17.13
@@ -575,8 +575,8 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /sudokutoolcollection/1.1.3:
-    resolution: {integrity: sha512-h4Zil6rq3dGaofgtUX6Ls3QhAPTPYQYHJELDw02WqnPQJ603SN8Vkjeq4m7Kk+Cf5F5GsvPPvO7FjFTVEHAMqw==}
+  /sudoku-gen/1.0.0:
+    resolution: {integrity: sha512-mqYlD/bNy8rgyt3N98+aRezeN580IbcaTLpmqkX5WePDObqCvZ+0skIn+I8d3ijcEA/ftt10/a6qQXsnkYWYTQ==}
     dev: false
 
   /toidentifier/1.0.1:

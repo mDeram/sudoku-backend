@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
 import persistGame from "../redis/persistGame";
 import { io } from "../index";
-const sudokuTools = require("sudokutoolcollection");
+import { generateSudoku, checkSudoku } from "../generators/sudokugen";
 
 const possibleCell = ["1", "2", "3", "4", "5", "6", "7", "8", "9", " "];
 
@@ -13,30 +13,19 @@ function initData() {
     return newData;
 }
 
-function formatGeneratedSudoku(generated: string): string[] {
-    return generated.replace(/\./g, " ").split("");
-}
-
-function formatSudokuToCheck(sudoku: string[]): string {
-    return sudoku.join("").replace(/\ /g, ".");
-}
-
-function generateSudoku(difficulty: "easy" | "medium" | "hard" | number) {
-    const sudoku = sudokuTools().generator.generate(difficulty);
-    return formatGeneratedSudoku(sudoku);
-}
-
 export type GameState = "create" | "init" | "run" | "done";
 
 export interface PersistedData {
     data: string[];
     layout: string[];
+    solution: string[];
     state: GameState
 }
 
 class Coop {
     data: string[];
     layout: string[];
+    solution: string[];
     state: GameState;
     id: string;
 
@@ -51,7 +40,9 @@ class Coop {
         }
 
         this.data = initData();
-        this.layout = generateSudoku("easy");
+        const { layout, solution } = generateSudoku("easy");
+        this.layout = layout;
+        this.solution = solution;
         this.state = "create";
 
         this.persist();
@@ -59,7 +50,12 @@ class Coop {
 
     async persist() {
         // Do we care about this being async?
-        await persistGame(this.id, { data: this.data, layout: this.layout, state: this.state });
+        await persistGame(this.id, {
+            data: this.data,
+            layout: this.layout,
+            solution: this.solution,
+            state: this.state
+        });
     }
 
     init() {
@@ -157,8 +153,7 @@ class Coop {
                 layoutAndData[i] = this.data[i];
             }
         }
-        const formatedData = formatSudokuToCheck(layoutAndData);
-        return sudokuTools().solver.solve(formatedData);
+        return checkSudoku(layoutAndData, this.solution);
     }
 }
 
