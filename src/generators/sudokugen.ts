@@ -6,12 +6,15 @@ const formatGenerated: FormatGenerated = (generated: string) => {
     return generated.replace(/-/g, " ").split("");
 }
 
-const generateSudoku: GenerateSudoku = (difficulty: Difficulty) => {
+const generateSudoku: GenerateSudoku = (difficulty: Difficulty | undefined) => {
+    if (!difficulty || !["easy", "medium", "hard", "expert"].includes(difficulty))
+        difficulty = "easy";
+
     const sudoku = getSudoku(difficulty);
-    console.log(sudoku.solution);
     return {
         layout: formatGenerated(sudoku.puzzle),
         solution: formatGenerated(sudoku.solution),
+        difficulty: sudoku.difficulty
     }
 }
 
@@ -19,4 +22,4 @@ const checkSudoku: CheckSudoku = (data, solution) => {
     return data.join("") === solution.join("");
 }
 
-export { generateSudoku, checkSudoku };
+export { generateSudoku, checkSudoku, Difficulty };

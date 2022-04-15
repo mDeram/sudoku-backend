@@ -1,7 +1,7 @@
 import { Socket } from "socket.io";
 import persistGame from "../redis/persistGame";
 import { io } from "../index";
-import { generateSudoku, checkSudoku } from "../generators/sudokugen";
+import { generateSudoku, checkSudoku, Difficulty } from "../generators/sudokugen";
 
 const possibleCell = ["1", "2", "3", "4", "5", "6", "7", "8", "9", " "];
 
@@ -19,6 +19,7 @@ export interface PersistedData {
     data: string[];
     layout: string[];
     solution: string[];
+    difficulty: string;
     state: GameState
 }
 
@@ -26,23 +27,26 @@ class Coop {
     data: string[];
     layout: string[];
     solution: string[];
+    difficulty: Difficulty;
     state: GameState;
     id: string;
 
-    constructor(id: string, restoreData?: PersistedData) {
+    constructor(id: string, difficulty: Difficulty | null, restoreData?: PersistedData) {
         this.id = id;
 
         if (restoreData) {
             this.data = restoreData.data;
             this.layout = restoreData.layout;
+            this.difficulty = restoreData.difficulty as Difficulty;
             this.state = restoreData.state;
             return;
         }
 
         this.data = initData();
-        const { layout, solution } = generateSudoku("easy");
-        this.layout = layout;
-        this.solution = solution;
+        const sudoku = generateSudoku(difficulty);
+        this.layout = sudoku.layout;
+        this.solution = sudoku.solution;
+        this.difficulty = sudoku.difficulty;
         this.state = "create";
 
         this.persist();
@@ -54,6 +58,7 @@ class Coop {
             data: this.data,
             layout: this.layout,
             solution: this.solution,
+            difficulty: this.difficulty,
             state: this.state
         });
     }
@@ -92,6 +97,7 @@ class Coop {
     }
 
     async join(socket: Socket) {
+        socket.emit("difficulty", this.difficulty);
         if (await this.canInit())
             this.init();
         else

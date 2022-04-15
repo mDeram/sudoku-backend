@@ -30,14 +30,14 @@ class GameManager {
         this.getCurrentGames(socket).forEach(room => socket.leave(room));
     }
 
-    createGame() {
+    createGame(difficulty: any) {
         const gameId = nanoid();
-        this.gamesData.set(gameId, { playerCount: 0, game: new Coop(gameId) });
+        this.gamesData.set(gameId, { playerCount: 0, game: new Coop(gameId, difficulty) });
         return gameId;
     }
 
     restoreGame(id: string, data: PersistedData) {
-        this.gamesData.set(id, { playerCount: 0, game: new Coop(id, data) });
+        this.gamesData.set(id, { playerCount: 0, game: new Coop(id, null, data) });
     }
 
     joinGame(gameId: string, socket: Socket) {

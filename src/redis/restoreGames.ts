@@ -15,6 +15,7 @@ async function restoreGameFromKey(key: string) {
             data: JSON.parse(data.data) as string[],
             layout: JSON.parse(data.layout) as string[],
             solution: JSON.parse(data.solution) as string[],
+            difficulty: data.difficulty as string,
             state: data.state as GameState
         }
 

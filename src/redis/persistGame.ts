@@ -9,6 +9,7 @@ const persistGame = async (id: string, data: PersistedData) => {
             "data", JSON.stringify(data.data),
             "layout", JSON.stringify(data.layout),
             "solution", JSON.stringify(data.solution),
+            "difficulty", data.difficulty,
             "state", data.state
         );
     } catch(e) {
