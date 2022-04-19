@@ -14,39 +14,41 @@ function initData() {
 }
 
 export type GameState = "create" | "init" | "run" | "done";
+export type Settings = { difficulty: Difficulty, minimumPlayer: number }
 
 export interface PersistedData {
     data: string[];
     layout: string[];
     solution: string[];
-    difficulty: string;
-    state: GameState
+    settings: { difficulty: string, minimumPlayer: number };
+    state: GameState;
 }
 
 class Coop {
     data: string[];
     layout: string[];
     solution: string[];
-    difficulty: Difficulty;
+    settings: Settings
     state: GameState;
     id: string;
 
-    constructor(id: string, difficulty: Difficulty | null, restoreData?: PersistedData) {
+    constructor(id: string, settings: Settings | null, restoreData?: PersistedData) {
         this.id = id;
 
         if (restoreData) {
             this.data = restoreData.data;
             this.layout = restoreData.layout;
-            this.difficulty = restoreData.difficulty as Difficulty;
+            this.settings = restoreData.settings as Settings;
             this.state = restoreData.state;
             return;
         }
 
         this.data = initData();
-        const sudoku = generateSudoku(difficulty);
+        const sudoku = generateSudoku(settings?.difficulty);
         this.layout = sudoku.layout;
         this.solution = sudoku.solution;
-        this.difficulty = sudoku.difficulty;
+        this.settings = settings!;
+        this.settings.difficulty = sudoku.difficulty;
         this.state = "create";
 
         this.persist();
@@ -58,7 +60,7 @@ class Coop {
             data: this.data,
             layout: this.layout,
             solution: this.solution,
-            difficulty: this.difficulty,
+            settings: this.settings,
             state: this.state
         });
     }
@@ -97,7 +99,7 @@ class Coop {
     }
 
     async join(socket: Socket) {
-        socket.emit("difficulty", this.difficulty);
+        socket.emit("settings", this.settings);
         if (await this.canInit())
             this.init();
         else
@@ -107,7 +109,7 @@ class Coop {
     async canInit() {
         if (this.state !== "create") return false;
         const playersInGame = await io.in(this.id).fetchSockets();
-        const enoughPlayerInGame = playersInGame.length >= 2;
+        const enoughPlayerInGame = playersInGame.length >= this.settings.minimumPlayer;
         return enoughPlayerInGame;
     }
 

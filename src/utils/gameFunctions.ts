@@ -7,7 +7,7 @@ const gameFunctions: {
     join: GameFunction
 } = {
     create: (socket: Socket, message: any) => {
-        const gameId = gameManager.createGame(message.difficulty);
+        const gameId = gameManager.createGame(message.settings);
         gameManager.joinGame(gameId, socket);
         socket.emit("gameId", gameId);
     },

@@ -30,9 +30,9 @@ class GameManager {
         this.getCurrentGames(socket).forEach(room => socket.leave(room));
     }
 
-    createGame(difficulty: any) {
+    createGame(settings: any) {
         const gameId = nanoid();
-        this.gamesData.set(gameId, { playerCount: 0, game: new Coop(gameId, difficulty) });
+        this.gamesData.set(gameId, { playerCount: 0, game: new Coop(gameId, settings) });
         return gameId;
     }
 
