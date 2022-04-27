@@ -38,6 +38,7 @@ class Coop {
         if (restoreData) {
             this.data = restoreData.data;
             this.layout = restoreData.layout;
+            this.solution = restoreData.solution;
             this.settings = restoreData.settings as Settings;
             this.state = restoreData.state;
             return;
